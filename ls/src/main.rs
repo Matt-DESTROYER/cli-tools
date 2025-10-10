@@ -20,10 +20,11 @@ struct LSOpts {
 }
 
 fn ls(dir: &PathBuf, options: &LSOpts) {
-    let paths: Vec<PathBuf> = fs::read_dir(dir).unwrap()
+    let mut paths: Vec<PathBuf> = fs::read_dir(dir).unwrap()
         .filter_map(|entry| entry.ok())
         .map(|entry| entry.path())
         .collect();
+    paths.sort();
 
     let mut to_recurse: Vec<PathBuf> = Vec::new();
 
@@ -79,7 +80,9 @@ fn ls(dir: &PathBuf, options: &LSOpts) {
         }
     }
 
-    print!("\n");
+    if paths.len() != 0 {
+        print!("\n");
+    }
 
     if to_recurse.len() > 0 {
         print!("\n");
@@ -89,6 +92,7 @@ fn ls(dir: &PathBuf, options: &LSOpts) {
         
         println!("{}:", path_name);
         ls(&path, options);
+
         if i != to_recurse.len() - 1 {
             print!("\n");
         }
