@@ -43,4 +43,6 @@ fn main() {
         // reset colouring
         print!("{}", "\x1b[0m");
     }
+
+    print!("\n");
 }
