@@ -45,14 +45,9 @@ fn ls(dir: &PathBuf, options: &LSOpts) {
 
         // unix specific file colouring
         #[cfg(unix)] {
-            if !metadata.unwrap().is_dir() {
-                match metadata {
-                    Ok(metadata) => {
-                        if metadata.permissions().mode() & 0o111 != 0 {
-                            print!("{}", "\x1b[0;92m"); // intense green
-                        }
-                    },
-                    Err(_) => {}
+            if !metadata.is_dir() {
+                if metadata.permissions().mode() & 0o111 != 0 {
+                    print!("{}", "\x1b[0;92m"); // intense green
                 }
             }
         }
