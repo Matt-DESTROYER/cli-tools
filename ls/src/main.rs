@@ -1,6 +1,6 @@
 use std::{
     env,
-    fs,
+    fs::{read_dir, metadata, Metadata},
     path::{
         Path,
         PathBuf
@@ -20,7 +20,7 @@ struct LSOpts {
 }
 
 fn ls(dir: &PathBuf, options: &LSOpts) {
-    let mut paths: Vec<PathBuf> = fs::read_dir(dir).unwrap()
+    let mut paths: Vec<PathBuf> = read_dir(dir).unwrap()
         .filter_map(|entry| entry.ok())
         .map(|entry| entry.path())
         .collect();
@@ -37,11 +37,9 @@ fn ls(dir: &PathBuf, options: &LSOpts) {
             continue;
         }
 
-        let metadata = fs::metadata(path).unwrap();
-        if metadata.is_dir() {
-            if options.recursive {
-                to_recurse.append(&mut vec![path.clone()]);
-            }
+        let metadata: Metadata = metadata(path).unwrap();
+        if options.recursive && metadata.is_dir() {
+            to_recurse.append(&mut vec![path.clone()]);
         }
 
         // unix specific file colouring
@@ -128,6 +126,8 @@ fn main() {
             }
         }
     }
+
+    println!("recursive: {}", options.recursive);
 
     ls(&Path::new("./").to_path_buf(), &options);
 }
