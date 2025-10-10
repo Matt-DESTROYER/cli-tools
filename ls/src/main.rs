@@ -25,7 +25,7 @@ fn main() {
             "-m" => comma_separated = true,
             "-r" | "--reverse" => paths.reverse(),
             "--group-directories-first" => paths
-                .sort_by(|a, b| b.is_dir().cmp(&a.is_dir())),
+                .sort_by_key(|path| !path.is_dir()),
             "-Q" | "--quote-name" => quote_name = true,
             _ => {
                 print!("{}", "\x1b[0;30m"); // red
