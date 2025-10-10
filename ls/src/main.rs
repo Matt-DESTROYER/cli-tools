@@ -38,8 +38,11 @@ fn ls(dir: &PathBuf, options: &LSOpts) {
         }
 
         let metadata: Metadata = metadata(path).unwrap();
-        if options.recursive && metadata.is_dir() {
-            to_recurse.append(&mut vec![path.clone()]);
+        if metadata.is_dir() {
+            if options.recursive {
+                to_recurse.append(&mut vec![path.clone()]);
+            }
+            print!("{}", "\x1b[0;94m"); // intense blue
         }
 
         // unix specific file colouring
