@@ -43,7 +43,7 @@ for /d %%D in (*) do (
         cargo build --release >"%TEMP%\cargo_build.log" 2>&1
         if errorlevel 1 (
             echo [!] Build failed in %%D, skipping...
-			echo -------------------------------------------------
+            echo -------------------------------------------------
             type "%TEMP%\cargo_build.log"
             echo -------------------------------------------------
             popd >nul
@@ -51,7 +51,7 @@ for /d %%D in (*) do (
             goto :nextproject
         )
 
-		del "%TEMP%\cargo_build.log" >nul 2>&1
+        del "%TEMP%\cargo_build.log" >nul 2>&1
 
         for %%F in (target\release\*.exe) do (
             echo "Moving %%~nxF to '%TARGET_DIR%'..."
@@ -66,10 +66,6 @@ for /d %%D in (*) do (
     :nextproject
 )
 
-echo.
-echo "✅ All done! Built executables moved to: '%TARGET_DIR%'"
-pause
-
 :: Add to PATH permanently if not already present
 echo.
 echo ==== Ensuring cli-tools is on PATH ====
@@ -77,8 +73,12 @@ echo %PATH% | find /I "C:\Program Files\cli-tools" >nul
 if errorlevel 1 (
     echo Adding "C:\Program Files\cli-tools" to system PATH...
     setx PATH "%PATH%;C:\Program Files\cli-tools"
-	set "PATH=%PATH%;C:\Program Files\cli-tools"
+    set "PATH=%PATH%;C:\Program Files\cli-tools"
 ) else (
     echo Already on PATH.
 )
+
+echo.
+echo Fin!
+pause
 
