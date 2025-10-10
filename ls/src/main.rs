@@ -5,15 +5,20 @@ use std::{
 };
 
 fn main() {
-    /*
+    let cwd: PathBuf = env::current_dir().unwrap();
+    let mut all: bool = false;
+
     let args: Vec<String> = std::env::args().collect();
 
-    for arg in args {
-        println!("{}", arg);
+    for arg in args.iter().skip(1) {
+        match arg.as_str() {
+            "-a" | "--all" => all = true,
+            _ => {
+                println!("Error: Unknown argument '{}'", arg);
+                return;
+            }
+        }
     }
-    */
-
-    let cwd: PathBuf = env::current_dir().unwrap();
 
     let paths = read_dir(cwd).unwrap();
     for entry in paths {
@@ -23,6 +28,10 @@ fn main() {
         let file_name = path
             .file_name().unwrap()
             .to_string_lossy();
+
+        if file_name.starts_with(".") && !all {
+            continue;
+        }
 
         // colour directories intense blue
         if path.is_dir() {
