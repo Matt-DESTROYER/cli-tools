@@ -1,57 +1,51 @@
 use std::{
     env,
     fs,
-    path::PathBuf
+    path::{
+        Path,
+        PathBuf
+    }
 };
 
 #[cfg(unix)]
 use std::os::unix::fs::PermissionsExt;
 
-fn main() {
-    let cwd: PathBuf = env::current_dir().unwrap();
-    let mut all: bool = false;
-    let mut comma_separated: bool = false;
-    let mut quote_name: bool = false;
+struct LSOpts {
+    all: bool,
+    comma_separated: bool,
+    reverse: bool,
+    group_directories_first: bool,
+    recursive: bool,
+    quote_name: bool
+}
 
-    let mut paths: Vec<PathBuf> = fs::read_dir(cwd).unwrap()
+fn ls(dir: &PathBuf, options: &LSOpts) {
+    let paths: Vec<PathBuf> = fs::read_dir(dir).unwrap()
         .filter_map(|entry| entry.ok())
         .map(|entry| entry.path())
         .collect();
 
-    let args: Vec<String> = std::env::args().collect();
-    for arg in args.iter().skip(1) {
-        match arg.as_str() {
-            "-a" | "--all" => all = true,
-            "-m" => comma_separated = true,
-            "-r" | "--reverse" => paths.reverse(),
-            "--group-directories-first" => paths
-                .sort_by_key(|path| !path.is_dir()),
-            "-Q" | "--quote-name" => quote_name = true,
-            _ => {
-                print!("{}", "\x1b[0;30m"); // red
-                println!("Error: Unknown argument '{}'", arg);
-                print!("{}", "\x1b[0m"); // reset colouring
-                return;
-            }
-        }
-    }
+    let mut to_recurse: Vec<PathBuf> = Vec::new();
 
-    let mut paths_iterator = paths.iter().peekable();
-    while let Some(path) = paths_iterator.next() {
+    for (i, path) in paths.iter().enumerate() {
         let file_name = path
             .file_name().unwrap()
             .to_string_lossy();
 
-        if file_name.starts_with(".") && !all {
+        if file_name.starts_with(".") && !options.all {
             continue;
         }
 
-        // unix file colouring
+        let metadata = fs::metadata(path).unwrap();
+        if metadata.is_dir() {
+            if options.recursive {
+                to_recurse.append(&mut vec![path.clone()]);
+            }
+        }
+
+        // unix specific file colouring
         #[cfg(unix)] {
-            let metadata = fs::metadata(&path);
-            if metadata.is_dir() {
-                print!("{}", "\x1b[0;94m"); // intense blue
-            } else {
+            if !metadata.unwrap().is_dir() {
                 match metadata {
                     Ok(metadata) => {
                         if metadata.permissions().mode() & 0o111 != 0 {
@@ -65,9 +59,6 @@ fn main() {
 
         // non-unix file colouring
         #[cfg(not(unix))] {
-            if path.is_dir() {
-                print!("{}", "\x1b[0;94m"); // intense blue
-            }
             match path.extension() {
                 Some(extension) => {
                     if extension == "exe" {
@@ -78,15 +69,15 @@ fn main() {
             }
         }
         
-        if quote_name {
+        if options.quote_name {
             print!("\"");
         }
         print!("{}", file_name);
-        if quote_name {
+        if options.quote_name {
             print!("\"");
         }
         print!("{}", "\x1b[0m"); // reset colouring
-        if comma_separated && paths_iterator.peek().is_some() {
+        if options.comma_separated && i == paths.len() - 1 {
             print!(", ");
         } else {
             print!(" ");
@@ -94,4 +85,50 @@ fn main() {
     }
 
     print!("\n");
+
+    if to_recurse.len() > 0 {
+        print!("\n");
+    }
+    for (i, path) in to_recurse.iter().enumerate() {
+        let path_name = path.to_string_lossy();
+        
+        println!("{}:", path_name);
+        ls(&path, options);
+        if i != to_recurse.len() - 1 {
+            print!("\n");
+        }
+    }
+}
+
+fn main() {
+    //let cwd: PathBuf = env::current_dir().unwrap();
+
+    let mut options = LSOpts {
+        all: false,
+        comma_separated: false,
+        reverse: false,
+        group_directories_first: false,
+        recursive: false,
+        quote_name: false
+    };
+
+    let args: Vec<String> = env::args().collect();
+    for arg in args.iter().skip(1) {
+        match arg.as_str() {
+            "-a" | "--all" => options.all = true,
+            "-m" => options.comma_separated = true,
+            "-r" | "--reverse" => options.reverse = true,
+            "--group-directories-first" => options.group_directories_first = true,
+            "-R" | "--recursive" => options.recursive = true,
+            "-Q" | "--quote-name" => options.quote_name = true,
+            _ => {
+                print!("{}", "\x1b[0;30m"); // red
+                println!("Error: Unknown argument '{}'", arg);
+                print!("{}", "\x1b[0m"); // reset colouring
+                return;
+            }
+        }
+    }
+
+    ls(&Path::new("./").to_path_buf(), &options);
 }
