@@ -127,7 +127,5 @@ fn main() {
         }
     }
 
-    println!("recursive: {}", options.recursive);
-
     ls(&Path::new("./").to_path_buf(), &options);
 }
