@@ -128,9 +128,20 @@ fn main() {
         quote_name: false
     };
 
-    let args: Vec<String> = env::args().collect();
     let mut directories: Vec<String> = Vec::new();
+
+    let args: Vec<String> = env::args().collect();
+    let mut expanded_args: Vec<String> = Vec::new();
     for arg in args.iter().skip(1) {
+        if arg.len() > 1 && arg.starts_with('-') {
+            for ch in arg.chars().skip(1) {
+                expanded_args.push(format!("-{}", ch));
+            }
+        } else {
+            expanded_args.push(arg.to_string());
+        }
+    }
+    for arg in expanded_args {
         match arg.as_str() {
             "-a" | "--all" => options.all = true,
             "-m" => options.comma_separated = true,
@@ -139,7 +150,7 @@ fn main() {
                 options.group_directories_first = true,
             "-R" | "--recursive" => options.recursive = true,
             "-Q" | "--quote-name" => options.quote_name = true,
-            arg if !arg.starts_with("-") && !arg.starts_with("--") =>
+            arg if !arg.starts_with('-') && !arg.starts_with("--") =>
                 directories.append(&mut vec![arg.to_string()]),
             _ => {
                 println!("\x1b[0;91mError: Unknown argument '{}'.\x1b[0m", arg);
