@@ -98,12 +98,8 @@ fn ls(directory: &Path, options: &LSOpts) {
         }
     }
 
-    if paths.len() != 0 {
-        print!("\n");
-    }
-
     if to_recurse.len() > 0 {
-        print!("\n");
+        print!("\n\n");
     }
     for (i, path) in to_recurse.iter().enumerate() {
         let path_name = path.to_string_lossy();
@@ -117,7 +113,7 @@ fn ls(directory: &Path, options: &LSOpts) {
         ls(&path, options);
 
         if i != to_recurse.len() - 1 {
-            print!("\n");
+            print!("\n\n");
         }
     }
 }
@@ -171,7 +167,7 @@ fn main() {
             ls(path, &options);
             
             if i != directories.len() - 1 {
-                print!("\n");
+                print!("\n\n");
             }
         }
     }
