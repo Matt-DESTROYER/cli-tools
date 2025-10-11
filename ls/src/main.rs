@@ -24,7 +24,12 @@ fn ls(dir: &PathBuf, options: &LSOpts) {
         .filter_map(|entry| entry.ok())
         .map(|entry| entry.path())
         .collect();
+
     paths.sort();
+
+    if options.group_directories_first {
+        paths.sort_by_key(|path| !path.is_dir());
+    }
 
     let mut to_recurse: Vec<PathBuf> = Vec::new();
 
