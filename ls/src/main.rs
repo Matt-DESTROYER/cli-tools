@@ -19,16 +19,25 @@ struct LSOpts {
     quote_name: bool
 }
 
-fn ls(dir: &PathBuf, options: &LSOpts) {
-    let mut paths: Vec<PathBuf> = read_dir(dir).unwrap()
+fn ls(directory: &Path, options: &LSOpts) {
+    if !directory.exists() {
+        println!("\x1b[0;91mError: Path not found '{}'.\x1b[0m", directory.to_string_lossy());
+        return;
+    }
+
+    let mut paths: Vec<PathBuf> = read_dir(directory).unwrap()
         .filter_map(|entry| entry.ok())
         .map(|entry| entry.path())
         .collect();
 
-    paths.sort();
-
     if options.group_directories_first {
-        paths.sort_by_key(|path| !path.is_dir());
+        paths.sort_by(|a, b| {
+            b.is_dir()
+                .cmp(&a.is_dir())
+                .then_with(|| a.cmp(b))
+        });
+    } else {
+        paths.sort();
     }
 
     let mut to_recurse: Vec<PathBuf> = Vec::new();
@@ -37,6 +46,11 @@ fn ls(dir: &PathBuf, options: &LSOpts) {
         let file_name = path
             .file_name().unwrap()
             .to_string_lossy();
+
+        if !path.exists() {
+            println!("\x1b[0;91mError: Path not found '{}'.\x1b[0m", file_name);
+            continue;
+        }
 
         if !options.all && file_name.starts_with(".") {
             continue;
@@ -50,7 +64,6 @@ fn ls(dir: &PathBuf, options: &LSOpts) {
             print!("{}", "\x1b[0;94m"); // intense blue
         }
 
-        // unix specific file colouring
         #[cfg(unix)] {
             if !metadata.is_dir() {
                 if metadata.permissions().mode() & 0o111 != 0 {
@@ -58,8 +71,6 @@ fn ls(dir: &PathBuf, options: &LSOpts) {
                 }
             }
         }
-
-        // non-unix file colouring
         #[cfg(not(unix))] {
             match path.extension() {
                 Some(extension) => {
@@ -79,7 +90,8 @@ fn ls(dir: &PathBuf, options: &LSOpts) {
             print!("\"");
         }
         print!("{}", "\x1b[0m"); // reset colouring
-        if options.comma_separated && i == paths.len() - 1 {
+
+        if options.comma_separated && i != paths.len() - 1 {
             print!(", ");
         } else {
             print!(" ");
@@ -95,7 +107,12 @@ fn ls(dir: &PathBuf, options: &LSOpts) {
     }
     for (i, path) in to_recurse.iter().enumerate() {
         let path_name = path.to_string_lossy();
-        
+
+        if !path.exists() {
+            println!("\x1b[0;91mError: Path not found '{}'.\x1b[0m", path_name);
+            continue;
+        }
+
         println!("{}:", path_name);
         ls(&path, options);
 
@@ -106,8 +123,6 @@ fn ls(dir: &PathBuf, options: &LSOpts) {
 }
 
 fn main() {
-    //let cwd: PathBuf = env::current_dir().unwrap();
-
     let mut options = LSOpts {
         all: false,
         comma_separated: false,
@@ -118,22 +133,46 @@ fn main() {
     };
 
     let args: Vec<String> = env::args().collect();
+    let mut directories: Vec<String> = Vec::new();
     for arg in args.iter().skip(1) {
         match arg.as_str() {
             "-a" | "--all" => options.all = true,
             "-m" => options.comma_separated = true,
             "-r" | "--reverse" => options.reverse = true,
-            "--group-directories-first" => options.group_directories_first = true,
+            "--group-directories-first" =>
+                options.group_directories_first = true,
             "-R" | "--recursive" => options.recursive = true,
             "-Q" | "--quote-name" => options.quote_name = true,
+            arg if !arg.starts_with("-") && !arg.starts_with("--") =>
+                directories.append(&mut vec![arg.to_string()]),
             _ => {
-                print!("{}", "\x1b[0;30m"); // red
-                println!("Error: Unknown argument '{}'", arg);
-                print!("{}", "\x1b[0m"); // reset colouring
+                println!("\x1b[0;91mError: Unknown argument '{}'.\x1b[0m", arg);
                 return;
             }
         }
     }
 
-    ls(&Path::new("./").to_path_buf(), &options);
+    if directories.len() == 0 {
+        ls(&Path::new("./"), &options);
+    } else if directories.len() == 1 {
+        ls(&Path::new(&directories[0]), &options);
+    } else {
+        for (i, directory) in directories.iter().enumerate() {
+            let path: &Path = Path::new(&directory);
+            if !path.exists() {
+                println!("\x1b[0;91mError: Path not found '{}'.\x1b[0m", path.to_string_lossy());
+                if i != directories.len() - 1 {
+                    print!("\n");
+                }
+                continue;
+            }
+
+            println!("{}:", directory);
+            ls(path, &options);
+            
+            if i != directories.len() - 1 {
+                print!("\n");
+            }
+        }
+    }
 }
