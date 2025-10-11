@@ -133,7 +133,7 @@ fn main() {
     let args: Vec<String> = env::args().collect();
     let mut expanded_args: Vec<String> = Vec::new();
     for arg in args.iter().skip(1) {
-        if arg.len() > 1 && arg.starts_with('-') {
+        if arg.len() > 2 && arg.starts_with('-') && !arg.starts_with("--") {
             for ch in arg.chars().skip(1) {
                 expanded_args.push(format!("-{}", ch));
             }
