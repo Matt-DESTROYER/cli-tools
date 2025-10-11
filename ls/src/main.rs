@@ -33,7 +33,7 @@ fn ls(dir: &PathBuf, options: &LSOpts) {
             .file_name().unwrap()
             .to_string_lossy();
 
-        if file_name.starts_with(".") && !options.all {
+        if !options.all && file_name.starts_with(".") {
             continue;
         }
 
