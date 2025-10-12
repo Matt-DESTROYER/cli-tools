@@ -40,6 +40,10 @@ fn ls(directory: &Path, options: &LSOpts) {
         paths.sort();
     }
 
+    if options.reverse {
+        paths.reverse();
+    }
+
     let mut to_recurse: Vec<PathBuf> = Vec::new();
 
     for (i, path) in paths.iter().enumerate() {
