@@ -1,6 +1,7 @@
 use std::{
     env,
-    fs
+    fs,
+    path::Path
 };
 
 fn main() {
@@ -16,6 +17,11 @@ fn main() {
     }
 
     for file in files {
+        let path: &Path = Path::new(&file);
+        if !path.exists() {
+            println!("\x1b[0;91mError: Path not found '{}'.\x1b[0m", path.file_name().unwrap().to_string_lossy());
+            continue;
+        }
         let content = fs::read_to_string(file).unwrap();
         println!("{}", content);
     }
