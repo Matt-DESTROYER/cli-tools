@@ -2,10 +2,38 @@ use std::{
     env,
     fs,
     io::{
-        Write, stdin, stdout
+        Result,
+        stdin,
+        stdout,
+        Write
     },
-    path::PathBuf
+    path::{
+        Path,
+        PathBuf
+    }
 };
+
+pub trait PathExt {
+    fn is_empty(&self) -> Result<bool>;
+}
+
+impl PathExt for Path {
+    fn is_empty(&self) -> Result<bool> {
+        match fs::metadata(self) {
+            Ok(metadata) => {
+                if !metadata.is_dir() {
+                    return Ok(false);
+                }
+            },
+            Err(err) => return Err(err)
+        }
+        let mut files = match fs::read_dir(self) {
+            Ok(entries) => entries,
+            Err(err) => return Err(err)
+        };
+        return Ok(files.next().is_none());
+    }
+}
 
 #[derive(PartialEq)]
 enum RMPrompting {
@@ -65,17 +93,22 @@ fn rm(options: &RMOpts, paths: &Vec<PathBuf>) {
             }
             if options.recursive {
                 match fs::remove_dir_all(path) {
-                    Ok(_) => {},
-                    Err(_) => {}
+                    Ok(_) => continue,
+                    Err(_) => println!("\x1b[0;91mrm: cannot remove '{}': an unexpected error occurred\x1b[0m",
+                        path.to_string_lossy())
                 }
-            } else {
+            } else if options.directories == true {
+                match path.is_empty() {
+                    Ok(_) => {},
+                    Err(_) => continue
+                }
                 match fs::remove_dir(path) {
                     Ok(_) => {
                         if options.verbose {
-                            println!("removed directory '{}'", path.to_string_lossy());
+                            println!("removed empty directory '{}'", path.to_string_lossy());
                         }
                     },
-                    Err(_) => {}
+                    Err(_) => continue
                 }
             }
         } else if path.is_file() {
