@@ -48,7 +48,6 @@ struct RMOpts {
     recursive: bool,
     directories: bool,
     verbose: bool,
-    help: bool,
     version: bool
 }
 
@@ -140,7 +139,6 @@ fn main() {
         recursive: false,
         directories: false,
         verbose: false,
-        help: false,
         version: false
     };
 
@@ -168,7 +166,36 @@ fn main() {
             "-r" | "-R" | "--recursive" => options.recursive = true,
             "-d" | "--dir" => options.directories = true,
             "-v" | "--verbose" => options.verbose = true,
-            "--help" => options.help = true,
+            "--help" => {
+                println!("Usage: rm [OPTION]... [FILE]...
+Remove (unlink) the FILE(s).
+
+  -f, --force           ignore nonexistent files and arguments, never prompt
+  -i                    prompt before every removal
+  -I                    prompt once before removing more than three files, or
+                          when removing recursively; less intrusive than -i,
+                          while still giving protection against most mistakes
+      --interactive[=WHEN]  prompt according to WHEN: never, once (-I), or
+                          always (-i); without WHEN, prompt always
+  -r, -R, --recursive   remove directories and their contents recursively
+  -d, --dir             remove empty directories
+  -v, --verbose         explain what is being done
+      --help        display this help and exit
+
+By default, rm does not remove directories.  Use the --recursive (-r or -R)
+option to remove each listed directory, too, along with all of its contents.
+
+To remove a file whose name starts with a '-', for example '-foo',
+use this command:
+  rm ./-foo
+
+Note that if you use rm to remove a file, it might be possible to recover
+some of its contents, given sufficient expertise and/or time.  For greater
+assurance that the contents are truly unrecoverable, consider using shred(1).
+
+GitHub Repo: <https://github.com/Matt-DESTROYER/cli-tools>");
+                return;
+            },
             "--version" => options.version = true,
             arg if !arg.starts_with('-') && !arg.starts_with("--") =>
                 paths.push(PathBuf::from(arg.to_string())),
