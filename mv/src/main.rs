@@ -162,6 +162,7 @@ fn main() {
                 options.debug = true;
                 options.verbose = true;
             },
+            "-f" | "--force" => options.interactive = false,
             "-i" | "--interactive" => options.interactive = true,
             "-n" | "--no-clobber" => options.no_clobber = true,
             "--strip-trailing-slashes" => options.strip_trailing_slashes = true,
