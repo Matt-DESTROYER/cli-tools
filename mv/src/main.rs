@@ -13,6 +13,7 @@ use std::{
 struct MVOpts {
     debug: bool,
     interactive: bool,
+    no_clobber: bool,
     strip_trailing_slashes: bool,
     verbose: bool
 }
@@ -84,8 +85,12 @@ fn mv(options: &MVOpts, paths: &Vec<PathBuf>) {
             .saturating_sub(1)
     ) {
         let destination_path: &PathBuf = &target.join(path.file_name().expect("Invalid file name."));
-        if options.interactive && destination_path.exists() {
-            if !prompt(format!("overwrite '{}'", destination_path.to_string_lossy()).as_str()) {
+        if destination_path.exists() {
+            if options.interactive {
+                if !prompt(format!("overwrite '{}'", destination_path.to_string_lossy()).as_str()) {
+                    continue;
+                }
+            } else if options.no_clobber {
                 continue;
             }
         }
@@ -133,6 +138,7 @@ fn main() {
     let mut options: MVOpts = MVOpts {
         debug: false,
         interactive: false,
+        no_clobber: false,
         strip_trailing_slashes: false,
         verbose: false
     };
@@ -157,8 +163,9 @@ fn main() {
                 options.verbose = true;
             },
             "-i" | "--interactive" => options.interactive = true,
+            "-n" | "--no-clobber" => options.no_clobber = true,
             "--strip-trailing-slashes" => options.strip_trailing_slashes = true,
-            "verbose" => options.verbose = true,
+            "--verbose" => options.verbose = true,
             arg if !arg.starts_with('-') && !arg.starts_with("--") =>
                 paths.push(PathBuf::from(arg)),
             _ => {
