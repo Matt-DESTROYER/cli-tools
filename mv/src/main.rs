@@ -137,7 +137,7 @@ fn mv(options: &MVOpts, paths: &Vec<PathBuf>) {
 fn main() {
     let mut options: MVOpts = MVOpts {
         debug: false,
-        interactive: false,
+        interactive: true,
         no_clobber: false,
         strip_trailing_slashes: false,
         verbose: false
