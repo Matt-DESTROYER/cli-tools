@@ -29,28 +29,24 @@ struct MVOpts {
     verbose: bool
 }
 
-fn input(prompt: &str) -> String {
+fn input(prompt: &str) -> Option<String> {
     print!("{}", prompt);
-    match stdout().flush() {
-        Ok(_) => {},
-        Err(_) => {}
-    }
+    let _ = stdout().flush();
+
     let mut user_input: String = String::new();
     match stdin().read_line(&mut user_input) {
-        Ok(_) => {},
-        Err(_) => {}
+        Ok(_) => Some(user_input.trim().to_string()),
+        Err(_) => None
     }
-    // TODO: find better method than `.trim()` as this would strip intentional spaces in addition to the `\n` (not really an issue here, but unintuitive)
-    return user_input.trim().to_string();
 }
 
 fn prompt(prompt: &str) -> bool {
-    let user_input: String = input(prompt);
-
-    return match user_input.to_lowercase().as_str() {
-        "y" | "ye" | "yes" => true,
-        _ => false
+    let user_input: String = match input(prompt) {
+        Some(input) => input,
+        None => return false
     };
+
+    return matches!(user_input.to_lowercase().as_str(), "y" | "ye" | "yes");
 }
 
 fn backup(path: &PathBuf, options: &MVOpts) -> Option<String> {
@@ -107,7 +103,7 @@ fn backup(path: &PathBuf, options: &MVOpts) -> Option<String> {
                             Some(filename) => {
                                 match filename.strip_suffix(&numbered_suffix) {
                                     Some(filename) => {
-                                        if filename.len() == 0 {
+                                        if filename.is_empty() {
                                             continue;
                                         }
                                         let n: i64 = match filename.parse() {
@@ -198,7 +194,14 @@ fn mv(options: &MVOpts, paths: &Vec<PathBuf>) {
         paths.len()
             .saturating_sub(1)
     ) {
-        let destination_path: &PathBuf = &target.join(path.file_name().expect("Invalid file name."));
+        let file_name = match path.file_name() {
+            Some(name) => name,
+            None => {
+                println!("\x1b[0;91mError: Invalid path '{}'.\x1b[0m", path.to_string_lossy());
+                continue;
+            }
+        };
+        let destination_path: &PathBuf = &target.join(file_name);
         if destination_path.exists() {
             if options.interactive {
                 if !prompt(format!("overwrite '{}'", destination_path.to_string_lossy()).as_str()) {
@@ -211,7 +214,7 @@ fn mv(options: &MVOpts, paths: &Vec<PathBuf>) {
             if options.backup {
                 if let Some(backup_file) = backup(destination_path, options) {
                     if options.verbose {
-                        println!("renamed '{}' -> '{}'",
+                        println!("backup '{}' -> '{}'",
                             path.to_string_lossy(),
                             backup_file);
                     }
@@ -250,7 +253,7 @@ fn mv(options: &MVOpts, paths: &Vec<PathBuf>) {
                 match fs::remove_file(path) {
                     Ok(_) => {
                         if options.debug {
-                            println!("removed '{}", path.to_string_lossy());
+                            println!("removed '{}'", path.to_string_lossy());
                         }
                     },
                     Err(_) => println!("\x1b[0;91mError: Failed to remove original file '{}' after copying.\x1b[0m", path.to_string_lossy())
@@ -321,7 +324,7 @@ fn main() {
                     }
                 }
             },
-            arg if !arg.starts_with('-') && !arg.starts_with("--") =>
+            arg if !arg.starts_with('-') =>
                 paths.push(PathBuf::from(arg)),
             _ => {
                 println!("\x1b[0;91mError: Unknown argument '{}'.\x1b[0m", arg);
