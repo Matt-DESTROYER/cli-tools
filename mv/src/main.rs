@@ -23,6 +23,7 @@ struct MVOpts {
     backup_control: MVBackup,
     backup_suffix: String,
     debug: bool,
+    force: bool,
     interactive: bool,
     no_clobber: bool,
     strip_trailing_slashes: bool,
@@ -195,6 +196,11 @@ fn mv(options: &MVOpts, paths: &Vec<PathBuf>) {
         paths.len()
             .saturating_sub(1)
     ) {
+        if !path.exists() {
+            println!("\x1b[0;91mError: Path not found '{}'.\x1b[0m", path.to_string_lossy());
+            continue;
+        }
+
         let file_name = match path.file_name() {
             Some(name) => name,
             None => {
@@ -204,7 +210,7 @@ fn mv(options: &MVOpts, paths: &Vec<PathBuf>) {
         };
         let destination_path: &PathBuf = &target.join(file_name);
         if destination_path.exists() {
-            if options.interactive {
+            if !options.force && options.interactive {
                 if !prompt(format!("overwrite '{}'", destination_path.to_string_lossy()).as_str()) {
                     continue;
                 }
@@ -271,6 +277,7 @@ fn main() {
         backup_control: MVBackup::Existing,
         backup_suffix: "~".to_string(),
         debug: false,
+        force: false,
         interactive: true,
         no_clobber: false,
         strip_trailing_slashes: false,
@@ -304,7 +311,7 @@ fn main() {
                 options.debug = true;
                 options.verbose = true;
             },
-            "-f" | "--force" => options.interactive = false,
+            "-f" | "--force" => options.force = true,
             "-i" | "--interactive" => options.interactive = true,
             "-n" | "--no-clobber" => options.no_clobber = true,
             "--strip-trailing-slashes" => options.strip_trailing_slashes = true,
@@ -321,7 +328,7 @@ fn main() {
                     "never" | "simple" => options.backup_control = MVBackup::Simple,
                     "none" | "off" => options.backup_control = MVBackup::None,
                     _ => {
-                        println!("\x1b[0;91mError: Unknown version control '{}'.\x1b[0m", arg);
+                        println!("\x1b[0;91mError: Unknown version control '{}'.\x1b[0m", version);
                         return;
                     }
                 }
