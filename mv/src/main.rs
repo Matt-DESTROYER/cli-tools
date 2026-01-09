@@ -172,6 +172,7 @@ fn mv(options: &MVOpts, paths: &Vec<PathBuf>) {
     if !target.is_dir() {
         if paths.len() > 2 {
             println!("\x1b[0;91mError: Too many paths supplied for rename operation.\x1b[0m");
+            return;
         }
         match fs::rename(&paths[0], &paths[1]) {
             Ok(_) => {
@@ -215,7 +216,7 @@ fn mv(options: &MVOpts, paths: &Vec<PathBuf>) {
                 if let Some(backup_file) = backup(destination_path, options) {
                     if options.verbose {
                         println!("backup '{}' -> '{}'",
-                            path.to_string_lossy(),
+                            destination_path.to_string_lossy(),
                             backup_file);
                     }
                 }
@@ -313,6 +314,7 @@ fn main() {
                     Some(version) => version.to_lowercase(),
                     None => continue
                 };
+                options.backup = true;
                 match version.as_str() {
                     "t" | "numbered" => options.backup_control = MVBackup::Numbered,
                     "nil" | "existing" => options.backup_control = MVBackup::Existing,
