@@ -6,7 +6,11 @@ fn main() {
         match Command::new("cmd")
                 .args(["/c", "cls"])
                 .status() {
-            Ok(_) => return,
+            Ok(status) => {
+                if status.success() {
+                    return;
+                }
+            },
             Err(_) => {}
         }
     }
