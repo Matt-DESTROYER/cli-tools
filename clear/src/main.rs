@@ -1,3 +1,5 @@
+use std::io::{self, Write};
+
 #[cfg(windows)]
 use std::process::Command;
 
@@ -16,4 +18,5 @@ fn main() {
     }
 
     print!("\x1B[2J\x1B[1;1H");
+    io::stdout().flush().ok();
 }
